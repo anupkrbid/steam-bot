@@ -26,5 +26,18 @@ client.on('loggedOn', details => {
 // Emitted once we have all data required in order to determine app ownership. You can now safely call getOwnedApps, ownsApp, getOwnedDepots, and ownsDepot.
 // This is only emitted if enablePicsCache is true.
 client.on('appOwnershipCached', function() {
-  const appids = client.getOwnedApps();
+  const apps = client.picsCache.apps;
+  const games = [];
+  for (let app in apps) {
+    if (
+      apps[app].appinfo &&
+      apps[app].appinfo.common &&
+      apps[app].appinfo.common.type.toLowerCase() === 'game'
+    ) {
+      games.push(app);
+    }
+  }
+
+  // Reports to Steam that you're playing or using zero or more games/apps. To exit all games/apps, use an empty array []
+  client.gamesPlayed(games);
 });
