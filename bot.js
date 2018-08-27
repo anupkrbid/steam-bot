@@ -1,31 +1,30 @@
-const axios = require('axios');
 const SteamTotp = require('steam-totp');
 const SteamUser = require('steam-user');
 
-const client = new SteamUser();
+const client = new SteamUser({ enablePicsCache: true });
 
+// An object containing details for this logon
 const logOnOptions = {
   accountName: process.env.STEAM_USERNAME,
   password: process.env.STEAM_PASSWORD,
   twoFactorCode: SteamTotp.generateAuthCode(process.env.STEAM_SHARED_SECRET)
 };
 
+// Logs onto Steam
 client.logOn(logOnOptions);
 
-client.on('loggedOn', () => {
+// Emitted when you're successfully logged into Steam.
+client.on('loggedOn', details => {
   console.log('Logged into Steam!');
-  const steamID64 = client.steamID.getSteamID64();
+
+  // Changes our online status, and optionally your profile name.
+  // You need to call this after you logon or else you'll show up as offline.
+  // You won't receive any chat messages or persona data about your friends if you don't go online.
   client.setPersona(SteamUser.Steam.EPersonaState.LookingToTrade);
-  // client.enablePicsCache = true;
-  // console.log(client.getOwnedApps());
-  axios
-    .get(
-      `http://api.steampowered.com/IPlayerService/GetOwnedGames/v0001/?key=${
-        process.env.STEAM_API_KEY
-      }&steamid=${steamID64}&format=json`
-    )
-    .then(res => {
-      const gameList = res.data.response.games.map(game => game.appid);
-      client.gamesPlayed(gameList);
-    });
+});
+
+// Emitted once we have all data required in order to determine app ownership. You can now safely call getOwnedApps, ownsApp, getOwnedDepots, and ownsDepot.
+// This is only emitted if enablePicsCache is true.
+client.on('appOwnershipCached', function() {
+  const appids = client.getOwnedApps();
 });
